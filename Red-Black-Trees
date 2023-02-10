@@ -1,0 +1,302 @@
+package data_structures;
+
+import java.util.Iterator;
+import java.util.NoSuchElementException;
+
+import interfaces.RedBlackI;
+
+public class RedBlackTree<k,v> implements RedBlackI<k,v> {
+
+    Node<k,v> root;
+    int size;
+    
+    public RedBlackTree() {
+        root = null;
+        size = 0;
+    }
+
+    public void add(k key, v value) {
+        Node<k,v> node = new Node<k,v>(key, value);
+        if (root == null) {
+            root = node;
+            root.black = true;
+            size++;
+            return;
+        }
+        add(root, node);
+        root.black = true;
+        size++;
+    }
+
+    private void add(Node<k,v> parent, Node<k,v> newNode) {
+        if (((Comparable<k>) newNode.key).compareTo(parent.key) > 0) {
+            if (parent.right == null) {
+                parent.right = newNode;
+                newNode.parent = parent;
+                newNode.leftChild = false;
+            } else
+                add(parent.right, newNode);
+        } else {
+            if (parent.left == null) {
+                parent.left = newNode;
+                newNode.parent = parent;
+                newNode.leftChild = true;
+            } else
+                add(parent.left, newNode);
+        }
+        checkColor(newNode);
+    }
+
+    public void checkColor(Node<k,v> node) {
+        if (node == root) {
+            return;
+        }
+        if (!node.black && !node.parent.black)
+            correctTree(node);
+        if (node.parent != null)
+            checkColor(node.parent);
+    }
+
+    public void correctTree(Node<k,v> node) {
+        if (node.parent.leftChild) {
+            if (node.parent.parent.right == null || node.parent.parent.right.black)
+                rotate(node);
+            else {
+                if (node.parent.parent.right != null)
+                    node.parent.parent.right.black = true;
+                node.parent.parent.black = false;
+                node.parent.black = true;
+            }
+        } else {
+            if (node.parent.parent.left == null || node.parent.parent.left.black)
+                rotate(node);
+            else {
+                if (node.parent.parent.left != null)
+                    node.parent.parent.left.black = true;
+                node.parent.parent.black = false;
+                node.parent.black = true;
+            }
+        }
+    }
+
+    public void rotate(Node<k,v> node) {
+        if (node.leftChild) {
+            if (node.parent.leftChild) {
+                rightRotate(node.parent.parent);
+                node.black = false;
+                node.parent.black = true;
+                if (node.parent.right != null)
+                    node.parent.right.black = false;
+            } else {
+                rightLeftRotate(node.parent.parent);
+                node.black = true;
+                node.right.black = false;
+                node.left.black = false;
+            }
+        } else {
+            if (!node.parent.leftChild) {
+                leftRotate(node.parent.parent);
+                node.black = false;
+                node.parent.black = true;
+                if (node.parent.left != null)
+                    node.parent.left.black = false;
+            } else {
+                leftRightRotate(node.parent.parent);
+                node.black = true;
+                node.right.black = false;
+                node.left.black = false;
+            }
+        }
+    }
+
+
+    public void leftRotate(Node<k,v> node) {
+        Node<k,v> temp = node.right;
+        node.right = temp.left;
+        if (node.right != null) {
+            node.right.parent = node;
+            node.right.leftChild = false;
+        }
+        if (node.parent == null) {
+            root = temp;
+            temp.parent = null;
+        } else {
+            temp.parent = node.parent;
+            if (node.leftChild) {
+                temp.leftChild = true;
+                temp.parent.left = temp;
+            } else {
+                temp.leftChild = false;
+                temp.parent.right = temp;
+            }
+        }
+        temp.left = node;
+        node.leftChild = true;
+        node.parent = temp;
+    }
+
+
+    public void rightRotate(Node<k,v> node) {
+        Node<k,v> temp = node.left;
+        node.left = temp.right;
+        if (node.left != null) {
+            node.left.parent = node;
+            node.left.leftChild = true;
+        }
+        if (node.parent == null) {
+            root = temp;
+            temp.parent = null;
+        } else {
+            temp.parent = node.parent;
+            if (!node.leftChild) {
+                temp.leftChild = false;
+                temp.parent.right = temp;
+            } else {
+                temp.leftChild = true;
+                temp.parent.left = temp;
+            }
+        }
+        temp.right = node;
+        node.leftChild = false;
+        node.parent = temp;
+    }
+
+    public void rightLeftRotate(Node<k,v> node) {
+        rightRotate(node.right);
+        leftRotate(node);
+    }
+
+    public void leftRightRotate(Node<k,v> node) {
+        leftRotate(node.left);
+        rightRotate(node);
+    }
+
+    public boolean contains(k key) {
+        if (find(key, root) == null)
+            return false;
+        return true;
+    }
+
+    private V find(k key, Node<k,v> node) {
+        if (node == null)
+            return null;
+        if (((Comparable<k>) key).compareTo(node.key) < 0)
+            return find(key, node.left);
+        if (((Comparable<k>) key).compareTo(node.key) > 0)
+            return find(key, node.right);
+
+        return (v) node.value;
+    }
+
+    public v getValue(k key) {
+        return (find(key, root));
+    }
+
+    public int size() {
+        return size;
+    }
+
+    public boolean isEmpty() {
+        return size == 0;
+    }
+
+    public int height() {
+        if (root == null)
+            return 0;
+        return height(root) - 1;
+    }
+
+    private int height(Node<k,v> node) {
+        if (node == null)
+            return 0;
+        int leftHeight = height(node.left) + 1;
+        int rightHeight = height(node.right) + 1;
+        if (leftHeight > rightHeight)
+            return leftHeight;
+        return rightHeight;
+    }
+
+    public int blackNodes(Node<k,v> node) {
+        if (node == null)
+            return 1;
+        int rightBlackNodes = blackNodes(node.right);
+        int leftBlackNodes = blackNodes(node.left);
+        if (rightBlackNodes != leftBlackNodes) {
+            throw //exception
+        }
+        if (node.black)
+            leftBlackNodes++;
+        return leftBlackNodes;
+    }
+
+    public Iterator<k> iterator() {
+        return new IteratorHelper();
+    }
+
+    public void print() {
+        print(root, 0);
+    }
+
+    private void print(Node<k,v> node, int width) {
+        if (node == null)
+            return;
+        print(node.left, width + 1);
+        for (int i = 0; i < width; i++)
+            System.out.print(".");
+        String color;
+        if (node.black)
+            color = "black";
+        else
+            color = "red";
+
+        if (((Comparable<k>) node.key).compareTo(root.key) == 0)
+            System.out.println(node.key + " : " + color + " (root)");
+        else
+            System.out.println(node.key + " : " + color);
+        print(node.right, width + 1);
+    }
+
+    class Node<k,v> {
+        k key;
+        v value;
+        Node<k, v> left, right, parent;
+        boolean leftChild, black;
+
+        public Node(k key, v value) {
+            this.key = key;
+            this.value = value;
+            left = right = parent = null;
+            black = false;
+            leftChild = false;
+        }
+    }
+
+    class IteratorHelper implements Iterator<k> {
+
+        int index;
+        k[] array;
+        public IteratorHelper() {
+            index = 0;
+            inOrder(root);
+            index = 0;
+            array = (k[]) new Object[size];
+        }
+        public boolean hasNext() {
+            return index < array.length;
+        }
+        public void inOrder(Node<k,v> node) {
+            if (node != null) {
+                inOrder(node.left);
+                array[index++] = node.key;
+                inOrder(node.right);
+            }
+        }
+
+        public k next() {
+            if (!hasNext())
+                throw new NoSuchElementException();
+
+            return array[index++];
+        }
+    }
+}
